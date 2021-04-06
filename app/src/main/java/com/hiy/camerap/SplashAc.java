@@ -20,7 +20,7 @@ public class SplashAc extends AppCompatActivity {
                 Intent intent = new Intent(SplashAc.this, MainActivity.class);
                 startActivity(intent);
             }
-        }, 150);
+        }, 1150);
     }
 
     @Override
