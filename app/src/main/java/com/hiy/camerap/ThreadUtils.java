@@ -14,7 +14,7 @@ public class ThreadUtils {
         boolean isMainThread = Looper.myLooper() == Looper.getMainLooper();
         Log.d(tag, "是否在主线程 = 【" + isMainThread + "】");
 //12
-//
+//111
 //
         return isMainThread;
     }
