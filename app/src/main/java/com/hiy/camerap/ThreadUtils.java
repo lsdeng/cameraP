@@ -13,6 +13,8 @@ public class ThreadUtils {
     public static boolean isMainThread() {
         boolean isMainThread = Looper.myLooper() == Looper.getMainLooper();
         Log.d(tag, "是否在主线程 = 【" + isMainThread + "】");
+//12
+//
 //
         return isMainThread;
     }
