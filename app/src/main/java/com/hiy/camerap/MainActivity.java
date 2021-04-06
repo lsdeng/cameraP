@@ -1,3 +1,4 @@
+
 package com.hiy.camerap;
 
 import android.Manifest;
@@ -18,6 +19,7 @@ import android.media.ImageReader;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
@@ -34,13 +36,16 @@ import androidx.core.app.ActivityCompat;
 
 import com.alibaba.fastjson.JSON;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     String needCameraId;
     ImageReader imageReader;
     CameraCaptureSession mCaptureSession;
-
+    HandlerThread mBackThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +76,45 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 //拍照
                 startCapture();
+            }
+        });
+
+        mBackThread = new HandlerThread("back");
+        mBackThread.start();
+
+        requestCommodityInfo();
+    }
+
+
+    public void requestCommodityInfo() {
+
+
+
+        OkHttpClient client = new OkHttpClient.Builder().build();
+
+        HttpUrl httpUrl = new HttpUrl.Builder()
+                .scheme("http")
+                .host("www.mxnzp.com")
+                .addPathSegments("api/barcode/goods/details")
+                .addQueryParameter("barcode", "6922266454295")
+                .addQueryParameter("app_id", HiyConstant.S_BARCODE_APP_ID)
+                .addQueryParameter("app_secret", HiyConstant.S_BARCODE_APP_SECRET)
+                .build();
+
+        Log.d(tag, httpUrl.toString());
+
+        Request request = new Request.Builder().url(httpUrl.toString()).build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.d(tag, "onFailure-" + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String resString = response.body().string();
+                Log.d(tag, "response-" + resString);
             }
         });
     }
@@ -95,9 +139,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private boolean checkPermission() {
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+    }
+
 
     @SuppressLint("MissingPermission")
     private void initCamera() {
+        if (!checkPermission()) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, HiyConstant.S_REQUEST_CODE_CAMERA);
+            return;
+        }
+
         if (cameraManager != null) {
             return;
         }
@@ -112,17 +165,18 @@ public class MainActivity extends AppCompatActivity {
             public void surfaceCreated(SurfaceHolder holder) {
                 Log.d(tag, "surfaceCreated");
                 mSurfaceHolder = holder;
+                openCamera();
             }
 
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
                 Log.d(tag, "surfaceChanged" + "[" + format + "," + width + "," + height + "]");
-                openCamera();
             }
 
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
                 Log.d(tag, "surfaceDestroyed");
+                release();
             }
         });
     }
@@ -145,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
 
                 int lens_facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                 Log.d(tag, "" + lens_facing);
-                if (lens_facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                if (lens_facing == CameraCharacteristics.LENS_FACING_BACK) {
                     needCameraCharacteristics = characteristics;
                     return cameraId;
                 }
@@ -167,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
+            Log.d(tag, "openCamera");
             cameraManager.openCamera(needCameraId, new CameraDevice.StateCallback() {
                 @SuppressLint("MissingPermission")
                 @RequiresApi(api = Build.VERSION_CODES.P)
@@ -226,7 +281,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             CaptureRequest.Builder builder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             builder.addTarget(mSurfaceHolder.getSurface());
-            builder.addTarget(imageReader.getSurface());
 
             CaptureRequest captureRequest = builder.build();
             mCaptureSession.setRepeatingRequest(captureRequest, new CameraCaptureSession.CaptureCallback() {
@@ -257,37 +311,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onImageAvailable(ImageReader reader) {
                 Image image = reader.acquireLatestImage();
-                if (image == null) {
-                    return;
-                }
-                Image.Plane[] planes = image.getPlanes();
-
-                if (planes.length > 0) {
-                    ByteBuffer buffer = planes[0].getBuffer();
-                    byte[] data = new byte[buffer.remaining()];
-                    buffer.get(data);
-
-
-                    File dir = MainActivity.this.getFilesDir();
-                    if (!dir.exists()) {
-                        dir.mkdirs();
-                    }
-
-                    File file = new File(dir.getAbsolutePath(), new Date().getTime() + ".jpg");
-                    OutputStream os = null;
-                    try {
-                        os = new FileOutputStream(file);
-                        os.write(data);
-                        os.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                image.close();
+                ImageUtils.saveImage(MainActivity.this, image);
                 Log.d(tag, "onImageAvailable");
-
+                ThreadUtils.isMainThread();
             }
-        }, new Handler(Looper.getMainLooper()));
+        }, new Handler(mBackThread.getLooper()));
     }
 
 
@@ -307,19 +335,43 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        release();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
 
-        if (imageReader != null) {
-            imageReader.close();
-        }
 
+        if (mBackThread != null) {
+            mBackThread.quitSafely();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == HiyConstant.S_REQUEST_CODE_CAMERA) {
+            initCamera();
+        }
+    }
+
+    private void release() {
         if (mCaptureSession != null) {
             mCaptureSession.close();
+            mCaptureSession = null;
         }
 
         if (cameraDevice != null) {
             cameraDevice.close();
+            cameraDevice = null;
+        }
+
+        if (imageReader != null) {
+            imageReader.close();
+            imageReader = null;
         }
     }
 }
