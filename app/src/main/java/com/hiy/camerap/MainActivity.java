@@ -47,9 +47,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-public class MainActivity extends AppCompatActivity {
-
-    private static final String tag = "MainActivity";
+public class MainActivity extends BaseAc {
 
     private Button mCaptureBtn;
 
@@ -69,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mSurfaceView = findViewById(R.id.surface);
-
         mCaptureBtn = findViewById(R.id.capture_btn);
         mCaptureBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,45 +76,41 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mBackThread = new HandlerThread("back");
+        mBackThread = new HandlerThread("Thread-bg");
         mBackThread.start();
-
-        requestCommodityInfo();
+//        requestCommodityInfo();
     }
 
 
-    public void requestCommodityInfo() {
-
-
-
-        OkHttpClient client = new OkHttpClient.Builder().build();
-
-        HttpUrl httpUrl = new HttpUrl.Builder()
-                .scheme("http")
-                .host("www.mxnzp.com")
-                .addPathSegments("api/barcode/goods/details")
-                .addQueryParameter("barcode", "6922266454295")
-                .addQueryParameter("app_id", HiyConstant.S_BARCODE_APP_ID)
-                .addQueryParameter("app_secret", HiyConstant.S_BARCODE_APP_SECRET)
-                .build();
-
-        Log.d(tag, httpUrl.toString());
-
-        Request request = new Request.Builder().url(httpUrl.toString()).build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Log.d(tag, "onFailure-" + e.getMessage());
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String resString = response.body().string();
-                Log.d(tag, "response-" + resString);
-            }
-        });
-    }
+//    public void requestCommodityInfo() {
+//        OkHttpClient client = new OkHttpClient.Builder().build();
+//
+//        HttpUrl httpUrl = new HttpUrl.Builder()
+//                .scheme("http")
+//                .host("www.mxnzp.com")
+//                .addPathSegments("api/barcode/goods/details")
+//                .addQueryParameter("barcode", "6922266454295")
+//                .addQueryParameter("app_id", HiyConstant.S_BARCODE_APP_ID)
+//                .addQueryParameter("app_secret", HiyConstant.S_BARCODE_APP_SECRET)
+//                .build();
+//
+//        Log.d(tag, httpUrl.toString());
+//
+//        Request request = new Request.Builder().url(httpUrl.toString()).build();
+//
+//        client.newCall(request).enqueue(new Callback() {
+//            @Override
+//            public void onFailure(Call call, IOException e) {
+//                Log.d(tag, "onFailure-" + e.getMessage());
+//            }
+//
+//            @Override
+//            public void onResponse(Call call, Response response) throws IOException {
+//                String resString = response.body().string();
+//                Log.d(tag, "response-" + resString);
+//            }
+//        });
+//    }
 
     private void startCapture() {
         CaptureRequest.Builder builder;
@@ -146,16 +139,12 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     private void initCamera() {
-        if (!checkPermission()) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, HiyConstant.S_REQUEST_CODE_CAMERA);
-            return;
+        if (cameraManager == null) {
+            cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         }
 
-        if (cameraManager != null) {
-            return;
-        }
-        cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         needCameraId = findCameraId();
+
         initImageReader();
 
         SurfaceHolder holder = mSurfaceView.getHolder();
@@ -183,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String findCameraId() {
         // camera 特征
-        CameraCharacteristics needCameraCharacteristics = null;
+//        CameraCharacteristics needCameraCharacteristics = null;
         try {
             String[] cameraIds = cameraManager.getCameraIdList();
             Log.d(tag, JSON.toJSONString(cameraIds));
@@ -200,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                 int lens_facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                 Log.d(tag, "" + lens_facing);
                 if (lens_facing == CameraCharacteristics.LENS_FACING_BACK) {
-                    needCameraCharacteristics = characteristics;
+//                    needCameraCharacteristics = characteristics;
                     return cameraId;
                 }
             }
@@ -251,8 +240,16 @@ public class MainActivity extends AppCompatActivity {
         if (mSurfaceHolder == null) {
             return;
         }
+
+        if (imageReader == null) {
+            return;
+        }
+
         try {
-            List<Surface> surfaces = Arrays.asList(mSurfaceHolder.getSurface(), imageReader.getSurface());
+            List<Surface> surfaces = Arrays.asList(
+                    mSurfaceHolder.getSurface(),
+                    imageReader.getSurface()
+            );
             cameraDevice.createCaptureSession(
                     surfaces,
                     new CameraCaptureSession.StateCallback() {
@@ -306,7 +303,8 @@ public class MainActivity extends AppCompatActivity {
             imageReader.close();
             imageReader = null;
         }
-        imageReader = ImageReader.newInstance(720, 1280, ImageFormat.JPEG, 5);
+
+        imageReader = ImageReader.newInstance(720, 1280, ImageFormat.JPEG, 2);
         imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
             @Override
             public void onImageAvailable(ImageReader reader) {
@@ -324,7 +322,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        initCamera();
+        if (!checkPermission()) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, HiyConstant.S_REQUEST_CODE_CAMERA);
+        } else {
+            initCamera();
+        }
 
     }
 
@@ -359,6 +361,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void release() {
+
         if (mCaptureSession != null) {
             mCaptureSession.close();
             mCaptureSession = null;

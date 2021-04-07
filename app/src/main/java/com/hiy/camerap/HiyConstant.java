@@ -6,7 +6,7 @@ package com.hiy.camerap;
  */
 public class HiyConstant {
 
-    public static final int S_REQUEST_CODE_CAMERA = 0x10001;
+    public static final int S_REQUEST_CODE_CAMERA = 0x0001;
 
     // 条形码查询api
     public static final String S_BARCODE_APP_ID = "xwkqkrkfgo7qdmpk";
