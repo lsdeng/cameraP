@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
 }
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 28
@@ -40,4 +41,13 @@ dependencies {
 
 
     implementation 'com.squareup.okhttp3:okhttp:3.12.12'
+    // kotlin
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    // zxing
+    implementation "com.google.zxing:core:3.4.1"
+}
+repositories {
+    maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
+    mavenCentral()
 }
