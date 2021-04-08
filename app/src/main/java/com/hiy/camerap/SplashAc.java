@@ -29,7 +29,7 @@ public class SplashAc extends AppCompatActivity {
             @Override
             public void run() {
                 Log.d(tag, "start MainAc");
-                Intent intent = new Intent(SplashAc.this, MainActivity.class);
+                Intent intent = new Intent(SplashAc.this, CommodityListAc.class);
                 startActivity(intent);
             }
         }, 150);

@@ -46,6 +46,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     // zxing
     implementation "com.google.zxing:core:3.4.1"
+    // common
+    implementation "me.drakeet.multitype:multitype:3.5.0"
 }
 repositories {
     maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
