@@ -1,13 +1,11 @@
 package com.hiy.camerap;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.ImageFormat;
 import android.media.Image;
 import android.net.Uri;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
 
 import java.io.File;
@@ -56,14 +54,14 @@ public class ImageUtils {
                 os = new FileOutputStream(file);
                 os.write(data);
                 os.close();
-                ContentResolver contentResolver = context.getContentResolver();
-                String retFilePath = MediaStore.Images.Media.insertImage(
-                        contentResolver,
-                        file.getAbsolutePath(),
-                        "name",
-                        "desc"
-                );
-                Log.d(tag, "save to image path = " + retFilePath);
+//                ContentResolver contentResolver = context.getContentResolver();
+//                String retFilePath = MediaStore.Images.Media.insertImage(
+//                        contentResolver,
+//                        file.getAbsolutePath(),
+//                        "name",
+//                        "desc"
+//                );
+//                Log.d(tag, "save to image path = " + retFilePath);
                 Uri uri = Uri.fromFile(file);
                 context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
 
@@ -73,7 +71,6 @@ public class ImageUtils {
 
         }
         image.close();
-
         return true;
     }
 
