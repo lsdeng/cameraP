@@ -41,7 +41,8 @@ class BmobAPi {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String resString = response.body().string();
-                Log.d(tag, "response-" + resString);
+                int code = response.code();
+                Log.d(tag, "response-" + resString + "; code = " + code);
             }
         });
     }

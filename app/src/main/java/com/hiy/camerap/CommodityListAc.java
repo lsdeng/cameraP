@@ -1,6 +1,7 @@
 package com.hiy.camerap;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -19,6 +20,10 @@ import me.drakeet.multitype.MultiTypeAdapter;
  * @since 2021/4/8
  */
 public class CommodityListAc extends BaseAc {
+
+    static {
+        System.loadLibrary("native-lib");
+    }
 
     private RecyclerView mListRv;
     private List<Object> mData;
@@ -39,11 +44,11 @@ public class CommodityListAc extends BaseAc {
 
         mAdapter.register(Commodity.class, new CommodityBinder());
         mListRv.setAdapter(mAdapter);
-
         loadData();
     }
 
     private void loadData() {
+        Log.d(tag, stringFromJNI());
         BmobAPi.getApi(BmobAPi.S_API_commodity_LIST);
     }
 
