@@ -35,6 +35,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.alibaba.fastjson.JSON;
+import com.hiy.camerap.service.CommodityService;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -78,39 +79,8 @@ public class MainActivity extends BaseAc {
 
         mBackThread = new HandlerThread("Thread-bg");
         mBackThread.start();
-//        requestCommodityInfo();
+        new CommodityService().requestCommodityInfo();
     }
-
-
-//    public void requestCommodityInfo() {
-//        OkHttpClient client = new OkHttpClient.Builder().build();
-//
-//        HttpUrl httpUrl = new HttpUrl.Builder()
-//                .scheme("http")
-//                .host("www.mxnzp.com")
-//                .addPathSegments("api/barcode/goods/details")
-//                .addQueryParameter("barcode", "6922266454295")
-//                .addQueryParameter("app_id", HiyConstant.S_BARCODE_APP_ID)
-//                .addQueryParameter("app_secret", HiyConstant.S_BARCODE_APP_SECRET)
-//                .build();
-//
-//        Log.d(tag, httpUrl.toString());
-//
-//        Request request = new Request.Builder().url(httpUrl.toString()).build();
-//
-//        client.newCall(request).enqueue(new Callback() {
-//            @Override
-//            public void onFailure(Call call, IOException e) {
-//                Log.d(tag, "onFailure-" + e.getMessage());
-//            }
-//
-//            @Override
-//            public void onResponse(Call call, Response response) throws IOException {
-//                String resString = response.body().string();
-//                Log.d(tag, "response-" + resString);
-//            }
-//        });
-//    }
 
     private void startCapture() {
         CaptureRequest.Builder builder;
